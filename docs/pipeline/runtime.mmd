@@ -1,0 +1,60 @@
+flowchart TD
+  U0(["User launches the JavaFX app"]) --> U1["Load config: buffer size, router, TTL, seed"]
+  U1 --> U2["Load scenario CSV or generate one from the seed"]
+  U2 --> U3["Build nodes with empty bounded stores"]
+  U3 --> U4["Fill EventQueue with contacts and messages"]
+  U4 --> U5["SimulationRunner starts paused on a background thread"]
+  U5 --> U6{"User presses Start?"}
+  U6 -- no --> U6
+  U6 -- yes --> L0
+
+  subgraph LOOP["Engine loop (background thread)"]
+    L0["Apply queued UI commands as events at time now"] --> L1["Pop next event: earliest time, then type order"]
+    L1 --> L2{"Event type?"}
+    L2 -- CreateMessage --> M1["Create Message with copy budget<br/>store original copy at source"]
+    L2 -- ContactUp / SessionTick --> C0["Run contact session"]
+    L2 -- ContactDown --> D0["Remove link from NetworkGraph"]
+    L2 -- RestartNode --> R0["Clear store if storage is volatile"]
+    L2 -- End --> END0["Stop run"]
+  end
+
+  subgraph SESSION["Contact session A-B (same code for every router)"]
+    C0 --> C1["Purge expired copies at A and B"]
+    C1 --> C2["Merge ack sets; purge copies already delivered"]
+    C2 --> C3["First session only: router updates its state"]
+    C3 --> C4["Router plans offers A to B and B to A"]
+    C4 --> C5{"Transfers used < K<br/>and offers left?"}
+    C5 -- no --> C9["Session ends"]
+    C5 -- yes --> C6{"Peer is destination?"}
+    C6 -- yes --> C7["DELIVER: record delivery,<br/>add ack, sender drops its copy"]
+    C6 -- no --> C8{"Peer store admits copy?<br/>(evict a victim if full)"}
+    C8 -- yes --> C10["REPLICATE: commit token split,<br/>peer marks ID as seen"]
+    C8 -- no --> C11["Rejected: sender keeps copy and tokens"]
+    C7 --> C5
+    C10 --> C5
+    C11 --> C5
+  end
+
+  M1 --> N0
+  C9 --> N0
+  D0 --> N0
+  R0 --> N0
+  N0["Listeners notified: MetricsCollector, event log"] --> N1["Publish immutable snapshot"]
+  N1 --> L0
+  N1 -.-> UI1
+
+  subgraph UI["JavaFX thread"]
+    UI1["AnimationTimer reads latest snapshot"] --> UI2["Redraw nodes, links, partitions, message paths"]
+    UI2 --> UI3["Update dashboard tiles and event log"]
+    UI3 --> UI4{"User action?"}
+    UI4 -- Send / connect / disconnect --> UI5["Send Command to engine queue"]
+    UI4 -- Pause / Reset --> UI6["Runner pauses or rebuilds engine from same seed"]
+    UI4 -- none --> UI1
+  end
+  UI5 -.-> L0
+
+  END0 --> X1["Compute ExperimentResult"]
+  X1 --> X2["Export CSV and show results"]
+
+  classDef gate fill:#f9eeda,stroke:#b07a1a;
+  class U6,L2,C5,C6,C8,UI4 gate;

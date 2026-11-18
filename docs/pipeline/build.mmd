@@ -1,0 +1,116 @@
+flowchart TD
+  START(["START: JavaFX DTN Simulator"]) --> A1
+
+  subgraph S1["STAGE 1 - Project setup"]
+    A1["Install JDK 21 + Maven + IDE"] --> A2["Create parent Maven project<br/>modules: dtn-core (no JavaFX), dtn-ui (JavaFX)"]
+    A2 --> A3["Add JUnit 5, JavaFX 21 plugin, .gitignore"]
+    A3 --> A4["Push to GitHub, add CI: mvn test"]
+    A4 --> A5{"Empty JavaFX window opens<br/>and mvn test passes?"}
+    A5 -- no --> A6["Fix JDK / JavaFX setup"] --> A5
+  end
+
+  A5 -- yes --> B1
+  subgraph S2["STAGE 2 - Data model"]
+    B1["MessagePriority enum: SOS, NORMAL"] --> B2["Message record: id, source, destination,<br/>content, priority, createdAt, ttl, initialCopies<br/>expiresAt() = createdAt + ttl"]
+    B2 --> B3["MessageCopy: tokens, hopCount, path,<br/>childFor() pure, commitSplit / commitHandoff"]
+    B3 --> B4["Contact record: a, b, start, end"]
+    B4 --> B5["Node: id, store, acks set, seen set,<br/>optional ProphetTable"]
+    B5 --> B6{"Model unit tests pass?<br/>tokens conserved on split"}
+    B6 -- no --> B3
+  end
+
+  B6 -- yes --> C1
+  subgraph S3["STAGE 3 - Storage and sync"]
+    C1["MessageStore interface"] --> C2["BoundedMessageStore: capacity C,<br/>admit, remove, purgeExpired"]
+    C2 --> C3["EvictionPolicy interface + FifoEviction"]
+    C3 --> C4["AckSet: grow-only ID set,<br/>merge = union, prune after expiry"]
+    C4 --> C5["MessageSyncManager: purge expired,<br/>exchange acks, summary of seen IDs"]
+    C5 --> C6{"Store and sync tests pass?<br/>FIFO evicts oldest, merge idempotent"}
+    C6 -- no --> C2
+  end
+
+  C6 -- yes --> D1
+  subgraph S4["STAGE 4 - Network and simulation engine"]
+    D1["NetworkGraph: add/remove node,<br/>connect/disconnect, components()"] --> D2["SimulationEvent types: ContactUp, ContactDown,<br/>SessionTick, CreateMessage, RestartNode, End"]
+    D2 --> D3["EventQueue ordered by<br/>time, event type, insertion order"]
+    D3 --> D4["SimulationEngine: step(), runUntil(t),<br/>runToEnd(), submit(command), snapshot()"]
+    D4 --> D5["ScenarioLoader: read CSV<br/>node / contact / msg / end rows"]
+    D5 --> D6{"Engine tests pass?<br/>event order correct, same input = same output"}
+    D6 -- no --> D4
+  end
+
+  D6 -- yes --> E1
+  subgraph S5["STAGE 5 - Contact session (store-carry-forward core)"]
+    E1["RoutingStrategy interface:<br/>onContactUp, planTransfers, onTransferAccepted"] --> E2["EncounterManager.runSession:<br/>purge expired, exchange acks, plan both directions"]
+    E2 --> E3["Alternate A to B and B to A transfers<br/>until K transfers used"]
+    E3 --> E4["executeTransfer: re-check, admit into peer store,<br/>commit tokens only if accepted"]
+    E4 --> E5["DirectDeliveryRouter: deliver only to destination"]
+    E5 --> E6{"Direct delivery test:<br/>A sends to B when they meet?"}
+    E6 -- no --> E4
+  end
+
+  E6 -- yes --> F1
+  subgraph S6["STAGE 6 - Baseline routing"]
+    F1["EpidemicRouter: offer every unseen copy,<br/>deliveries first, FIFO buffer"] --> F2{"Multi-hop test: A to C to D across a gap,<br/>no duplicates, TTL stops forwarding?"}
+    F2 -- no --> F1
+    F2 -- yes --> F3["SprayAndWaitRouter (Binary): L copies,<br/>give half, 1 token = wait for destination"]
+    F3 --> F4{"Spray and Wait tests:<br/>8 to 4/4, 2/2, 1/1, then wait?"}
+    F4 -- no --> F3
+    F4 -- yes --> F5["Optional later: ProphetTable + ProphetRouter<br/>aging, encounter, transitivity, GRTR"]
+  end
+
+  F5 --> G1
+  subgraph S7["STAGE 7 - Metrics"]
+    G1["SimulationListener interface"] --> G2["MetricsCollector: generated, delivered,<br/>latency, transmissions, drops by reason"]
+    G2 --> G3["ExperimentResult: delivery ratio (all, SOS, NORMAL),<br/>avg latency, overhead ratio, buffer drop rate"]
+    G3 --> G4["TokenConservationChecker (test listener)"]
+    G4 --> G5{"Metrics match a hand-checked<br/>small scenario?"}
+    G5 -- no --> G2
+  end
+
+  G5 -- yes --> H1
+  subgraph S8["STAGE 8 - Proposed method: PALR-lite"]
+    H1["Class copy budgets:<br/>SOS 10, NORMAL 5 (mean 6 = Spray and Wait)"] --> H2["Transfer order inside each contact:<br/>deliveries first, then S, S, S, N pattern"]
+    H2 --> H3["PriorityAwareEviction:<br/>NORMAL evicted first, but keeps a reserved share"]
+    H3 --> H4["Near-expiry rule: no new copies<br/>when remaining life below 5% of TTL"]
+    H4 --> H5["Ablation switch: priority on / off"]
+    H5 --> H6{"PALR tests pass?<br/>order, reserve, budgets, tokens conserved"}
+    H6 -- no --> H2
+  end
+
+  H6 -- yes --> I1
+  subgraph S9["STAGE 9 - Scenarios and experiments"]
+    I1["ScenarioGenerator: N = 50 nodes, communities,<br/>random contacts from a fixed seed"] --> I2["Scenarios: normal, partition,<br/>limited buffer (optional: high load, SOS-heavy)"]
+    I2 --> I3["ExperimentRunner: routers x scenarios x 20 seeds,<br/>same contacts for every router"]
+    I3 --> I4["ResultExporter: runs.csv + summary.csv<br/>mean and 95% CI"]
+    I4 --> I5{"Sanity: Epidemic collapses at small buffer,<br/>Spray and Wait does not?"}
+    I5 -- no --> I6["Debug routing or metrics"] --> I3
+  end
+
+  I5 -- yes --> J1
+  subgraph S10["STAGE 10 - JavaFX application"]
+    J1["SimulationRunner: engine on one background thread,<br/>speed, pause, resume, reset"] --> J2["Main window (BorderPane) + toolbar:<br/>Start, Pause, Step, Reset, speed, router selector"]
+    J2 --> J3["NetworkView canvas: nodes, live contacts,<br/>partition colours, message path"]
+    J3 --> J4["Message composer: from, to, text,<br/>SOS / NORMAL, TTL, Send"]
+    J4 --> J5["Network controls: disconnect / restore link"]
+    J5 --> J6["Dashboard tiles + event log table"]
+    J6 --> J7["AnimationTimer reads snapshots;<br/>UI never touches engine objects"]
+    J7 --> J8{"UI stays responsive,<br/>demo scenario plays correctly?"}
+    J8 -- no --> J1
+  end
+
+  J8 -- yes --> K1
+  subgraph S11["STAGE 11 - Results, report and demo"]
+    K1["Charts from summary.csv:<br/>delivery, SOS vs NORMAL, overhead, drops"] --> K2["Report: problem, related work, design,<br/>PALR-lite, results, limitations, future work"]
+    K2 --> K3["Scripted demo: partition, SOS stored,<br/>link restored, delivered, no duplicate"]
+    K3 --> K4["Rehearse from a clean checkout,<br/>record a backup video"]
+  end
+
+  K4 --> FINISH(["DONE: demonstrable research prototype"])
+
+  classDef gate fill:#f9eeda,stroke:#b07a1a;
+  classDef opt fill:#f4f4f2,stroke:#999,stroke-dasharray: 4 3;
+  classDef ends fill:#e5f4e4,stroke:#3a7d3a;
+  class A5,B6,C6,D6,E6,F2,F4,G5,H6,I5,J8 gate;
+  class F5 opt;
+  class START,FINISH ends;
