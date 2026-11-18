@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ── Inherit from parent ────────────────────────────────────────── -->
+    <!-- This pulls in all shared settings from the parent pom.xml        -->
+    <parent>
+        <groupId>com.emergency.dtn</groupId>
+        <artifactId>emergency-dtn</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <!-- ── This module's identity ─────────────────────────────────────── -->
+    <!-- packaging defaults to "jar" — this module produces a .jar file  -->
+    <artifactId>dtn-core</artifactId>
+    <name>DTN Core - Simulation Engine (no JavaFX)</name>
+
+    <!-- ── Dependencies ──────────────────────────────────────────────── -->
+    <dependencies>
+
+        <!-- JUnit 5 Jupiter API — used to write @Test methods           -->
+        <!-- scope=test means this jar is only on classpath during tests -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit 5 Engine — actually runs the tests via Maven Surefire -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Surefire runs unit tests when you run: mvn test          -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+

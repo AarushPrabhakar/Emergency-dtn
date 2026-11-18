@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ── Inherit from parent ────────────────────────────────────────── -->
+    <parent>
+        <groupId>com.emergency.dtn</groupId>
+        <artifactId>emergency-dtn</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>dtn-ui</artifactId>
+    <name>DTN UI - JavaFX Frontend</name>
+
+    <!-- ── Dependencies ──────────────────────────────────────────────── -->
+    <dependencies>
+
+        <!-- Our own core module — UI depends on the simulation engine    -->
+        <dependency>
+            <groupId>com.emergency.dtn</groupId>
+            <artifactId>dtn-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- JavaFX Controls — Button, Label, TableView, etc.            -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>mac-aarch64</classifier>
+        </dependency>
+
+        <!-- JavaFX FXML — lets us define UI layout in .fxml XML files   -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+            <classifier>mac-aarch64</classifier>
+        </dependency>
+
+        <!-- JUnit 5 for any UI integration tests                        -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <!-- JavaFX Maven Plugin — allows: mvn javafx:run             -->
+            <!-- mainClass points to our JavaFX Application entry point  -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>0.0.8</version>
+                <configuration>
+                    <mainClass>com.emergency.dtn.ui.MainApp</mainClass>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+        </plugins>
+    </build>
+
+</project>

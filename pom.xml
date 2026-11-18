@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ── Parent coordinates ─────────────────────────────────────────── -->
+    <!-- groupId   : reverse-domain style identifier for this project      -->
+    <!-- artifactId: the name Maven uses for the parent project            -->
+    <!-- version   : 1.0-SNAPSHOT means "in development, not released yet" -->
+    <!-- packaging : pom = this module contains no source, just child refs -->
+    <groupId>com.emergency.dtn</groupId>
+    <artifactId>emergency-dtn</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Emergency DTN Simulator - Parent</name>
+
+    <!-- ── Child modules ──────────────────────────────────────────────── -->
+    <!-- Maven will build these in order (core first, then ui)            -->
+    <modules>
+        <module>dtn-core</module>
+        <module>dtn-ui</module>
+    </modules>
+
+    <!-- ── Shared properties ──────────────────────────────────────────── -->
+    <!-- These act like constants — change once, applies everywhere       -->
+    <properties>
+        <java.version>22</java.version>
+        <maven.compiler.source>22</maven.compiler.source>
+        <maven.compiler.target>22</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Dependency versions — defined here so both modules stay in sync -->
+        <junit.version>5.10.2</junit.version>
+        <javafx.version>21.0.2</javafx.version>
+    </properties>
+
+    <!-- ── Dependency Management ──────────────────────────────────────── -->
+    <!-- This does NOT add dependencies to child modules automatically.   -->
+    <!-- It only sets the version. Children still declare what they need, -->
+    <!-- but don't have to repeat the version number.                     -->
+    <dependencyManagement>
+        <dependencies>
+
+            <!-- JUnit 5 BOM (Bill of Materials) — imports a consistent    -->
+            <!-- set of JUnit 5 version numbers all at once                -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>${junit.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- ── Plugin Management ──────────────────────────────────────────── -->
+    <!-- Same idea as dependencyManagement but for build plugins          -->
+    <build>
+        <pluginManagement>
+            <plugins>
+
+                <!-- Maven Compiler Plugin: enforce Java 21 in all modules -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.12.1</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <encoding>UTF-8</encoding>
+                    </configuration>
+                </plugin>
+
+                <!-- Maven Surefire Plugin: runs JUnit 5 tests (mvn test) -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                </plugin>
+
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>
